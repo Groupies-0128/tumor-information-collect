@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+import SimpleITK as sitk
+import os
 import prettytable as pt
 
 slice_information = []
@@ -8,6 +10,19 @@ start_slice_list = []
 end_slice_list = []
 total_tumor_size_list = []
 tumor_no_size_per_slice_list = []
+
+
+def mha2jpg(case_no):
+    path = 'C:/Users/lrz/Desktop/jpg_label'
+    os.mkdir(path + '/' + case_no)
+    slices = sitk.ReadImage('C:/Users/lrz/Desktop/mha_label/data2_' + case_no + '_lesion_label.mha')
+    slices_data = sitk.GetArrayFromImage(slices)
+    for i in range(len(slices_data)):
+        slices_data[i] *= 255
+        cv2.imwrite('C:/Users/lrz/Desktop/jpg_label/' + case_no + '/' + str(i) + '.jpg', slices_data[i])
+    print(len(slices_data))
+
+
 '''
 获取切片的信息，格式为三维：
 第一维：每张切片
@@ -17,7 +32,7 @@ tumor_no_size_per_slice_list = []
 def collect_tumor_information(case_no, slice_num):   # Path
     global slice_information
     for slice_no in range(slice_num):
-        img = cv2.imread('C:/Users/lrz/Desktop/readMHA/' + case_no + '/lesion/' + str(slice_no) + '.jpg')
+        img = cv2.imread('C:/Users/lrz/Desktop/jpg_label/' + case_no + '/' + str(slice_no) + '.jpg') # C:\Users\lrz\Desktop\jpg_label\0213
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         ret, binary = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
         contours, hierarchy = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -31,7 +46,7 @@ def collect_tumor_information(case_no, slice_num):   # Path
         else:
             inter_information.append([slice_no, -1, -1, 0, 0, 0, 0])
             slice_information.append(inter_information)
-    print(slice_information)
+    # print(slice_information)
 
 '''
 获取第一个和最后一个带有肿瘤的slice_no
@@ -138,7 +153,7 @@ def tumor_no_start_slice(slice_num):
 返回值：肿瘤所占像素点数量
 '''
 def size_in_rec(case_no, slice_no, x, y, w, h): # , x, y, w, h
-    img = cv2.imread('C:/Users/lrz/Desktop/readMHA/' + case_no + '/lesion/' + str(slice_no) + '.jpg')
+    img = cv2.imread('C:/Users/lrz/Desktop/jpg_label/' + case_no + '/' + str(slice_no) + '.jpg')
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     ret, binary = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
     count = 0
@@ -248,11 +263,9 @@ def show_in_table():
 
 
 
-
-
-
 if __name__ == '__main__':
     case_no = input('case_no:')
+    mha2jpg(case_no)
     slice_num = int(input("slice_number:"))
     collect_tumor_information(case_no, slice_num)
     first, last = first_and_last_slice(slice_num)
